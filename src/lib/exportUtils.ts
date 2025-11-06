@@ -92,7 +92,7 @@ export const exportToPDF = async (elementId: string, controller: ControllerData)
     pdf.setFont('helvetica', 'bold');
     pdf.text(field[0], x, rowY);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(field[1], x + 40, rowY);
+    pdf.text(field[1], x + 32, rowY);
   });
 
   y += Math.ceil(infoFields.length / 3) * 10 + 5;
