@@ -92,7 +92,7 @@ export const exportToPDF = async (elementId: string, controller: ControllerData)
     pdf.setFont('helvetica', 'bold');
     pdf.text(field[0], x, rowY);
     pdf.setFont('helvetica', 'normal');
-    pdf.text(field[1], x + 25, rowY);
+    pdf.text(field[1], x + 40, rowY);
   });
 
   y += Math.ceil(infoFields.length / 3) * 10 + 5;
@@ -163,8 +163,8 @@ export const exportToPDF = async (elementId: string, controller: ControllerData)
   y += 7;
 
   pdf.setFont('helvetica', 'bold');
-  pdf.text('Total Power Output:', pageWidth - 70, y);
-  pdf.text(totalPower.toFixed(2) + ' W', pageWidth - 30, y, { align: 'right' });
+  pdf.text('Total Power Output:', pageWidth - 80, y);
+  pdf.text(totalPower.toFixed(2) + ' W', pageWidth - 25, y, { align: 'right' });
   y += 10;
 
   // Note
