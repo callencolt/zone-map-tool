@@ -46,11 +46,36 @@ export const exportToPDF = async (elementId: string, controller: ControllerData)
   const element = document.getElementById(elementId);
   if (!element) return;
 
-  const canvas = await html2canvas(element, {
+  // Clone the element to avoid modifying the original
+  const clone = element.cloneNode(true) as HTMLElement;
+  clone.style.position = 'absolute';
+  clone.style.left = '-9999px';
+  clone.style.width = '1200px';
+  document.body.appendChild(clone);
+
+  // Replace all input elements with divs containing their values
+  const inputs = clone.querySelectorAll('input');
+  inputs.forEach(input => {
+    const div = document.createElement('div');
+    div.textContent = input.value;
+    div.className = input.className;
+    div.style.cssText = window.getComputedStyle(input).cssText;
+    div.style.border = window.getComputedStyle(input).border;
+    div.style.padding = window.getComputedStyle(input).padding;
+    div.style.height = window.getComputedStyle(input).height;
+    div.style.whiteSpace = 'nowrap';
+    div.style.overflow = 'visible';
+    input.parentNode?.replaceChild(div, input);
+  });
+
+  const canvas = await html2canvas(clone, {
     scale: 2,
     useCORS: true,
     logging: false,
   });
+
+  // Remove the clone
+  document.body.removeChild(clone);
 
   const imgData = canvas.toDataURL('image/png');
   const pdf = new jsPDF({
