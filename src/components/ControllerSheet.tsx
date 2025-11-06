@@ -60,7 +60,7 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
   );
   const [channels, setChannels] = useState<Channel[]>(
     initialData?.channels || [
-      { id: "1", channelNumber: 1, fixtureType: "", voltage: "", current: "" },
+      { id: "1", channelNumber: 1, fixtureType: "", voltage: "", current: "", parallelCount: 1 },
     ]
   );
   const [templates, setTemplates] = useState<ControllerTemplate[]>([]);
@@ -83,6 +83,7 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
         fixtureType: "",
         voltage: "",
         current: "",
+        parallelCount: 1,
       },
     ]);
   };
@@ -103,15 +104,16 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
     );
   };
 
-  const calculatePower = (voltage: string, current: string): number => {
+  const calculatePower = (voltage: string, current: string, parallelCount: number): number => {
     const v = parseFloat(voltage) || 0;
     const a = parseFloat(current) || 0;
-    return v * a;
+    const count = parallelCount || 1;
+    return v * a * count;
   };
 
   const getTotalPower = (): number => {
     return channels.reduce((total, channel) => {
-      return total + calculatePower(channel.voltage, channel.current);
+      return total + calculatePower(channel.voltage, channel.current, channel.parallelCount);
     }, 0);
   };
 
@@ -204,6 +206,12 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
       id: Date.now().toString(),
       name: templateName,
       description: templateDescription,
+      campus,
+      building,
+      floor,
+      zone,
+      controllerNumber,
+      powerLimit: powerLimit ? parseFloat(powerLimit) : undefined,
       channels: channels.map(({ id, ...channel }) => channel),
       createdAt: new Date().toISOString(),
     };
@@ -226,6 +234,15 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
     }));
 
     setChannels(newChannels);
+    
+    // Load controller info if available
+    if (template.campus) setCampus(template.campus);
+    if (template.building) setBuilding(template.building);
+    if (template.floor) setFloor(template.floor);
+    if (template.zone) setZone(template.zone);
+    if (template.controllerNumber) setControllerNumber(template.controllerNumber);
+    if (template.powerLimit) setPowerLimit(template.powerLimit.toString());
+    
     toast.success(`Loaded template: ${template.name}`);
   };
 
@@ -455,6 +472,9 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                           Current (A)
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                          Qty Parallel
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                           Power (W)
                         </th>
                         <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase tracking-wider print:hidden">
@@ -464,7 +484,7 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                     </thead>
                     <tbody className="bg-card divide-y divide-border">
                       {channels.map((channel) => {
-                        const power = calculatePower(channel.voltage, channel.current);
+                        const power = calculatePower(channel.voltage, channel.current, channel.parallelCount);
                         return (
                           <tr key={channel.id} className="hover:bg-muted/50 transition-colors">
                             <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-foreground">
@@ -504,6 +524,19 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                                 step="0.1"
                               />
                             </td>
+                            <td className="px-4 py-3">
+                              <Input
+                                type="number"
+                                value={channel.parallelCount}
+                                onChange={(e) =>
+                                  updateChannel(channel.id, "parallelCount", e.target.value)
+                                }
+                                placeholder="1"
+                                className="h-9 w-20"
+                                min="1"
+                                step="1"
+                              />
+                            </td>
                             <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-foreground">
                               {power > 0 ? power.toFixed(2) : "—"}
                             </td>
@@ -523,7 +556,7 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                     </tbody>
                     <tfoot className="bg-muted">
                       <tr>
-                        <td colSpan={4} className="px-4 py-3 text-right text-sm font-semibold text-foreground">
+                        <td colSpan={5} className="px-4 py-3 text-right text-sm font-semibold text-foreground">
                           Total Power Output:
                         </td>
                         <td className="px-4 py-3 text-sm font-bold text-primary">
@@ -555,7 +588,7 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
           <DialogHeader>
             <DialogTitle>Save as Template</DialogTitle>
             <DialogDescription>
-              Save the current channel configuration as a reusable template.
+              Save the current controller information and channel configuration as a reusable template.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">

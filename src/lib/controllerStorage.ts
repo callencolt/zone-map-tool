@@ -4,6 +4,7 @@ export interface Channel {
   fixtureType: string;
   voltage: string;
   current: string;
+  parallelCount: number;
 }
 
 export interface ControllerData {
@@ -23,6 +24,12 @@ export interface ControllerTemplate {
   id: string;
   name: string;
   description: string;
+  campus?: string;
+  building?: string;
+  floor?: string;
+  zone?: string;
+  controllerNumber?: string;
+  powerLimit?: number;
   channels: Omit<Channel, 'id'>[];
   createdAt: string;
 }
