@@ -53,11 +53,19 @@ export const exportToPDF = async (elementId: string, controller: ControllerData)
   const pageWidth = pdf.internal.pageSize.getWidth();
   let y = 15;
 
-  // Title
-  pdf.setFontSize(20);
+  // Title with Controller Number
+  pdf.setFontSize(22);
   pdf.setFont('helvetica', 'bold');
-  pdf.text('Controller Documentation', 15, y);
-  y += 12;
+  pdf.text(`Controller #${controller.controllerNumber}`, 15, y);
+  y += 8;
+
+  // Subtitle with location
+  pdf.setFontSize(12);
+  pdf.setFont('helvetica', 'normal');
+  pdf.setTextColor(100, 100, 100);
+  pdf.text(`${controller.building} - ${controller.campus}`, 15, y);
+  pdf.setTextColor(0, 0, 0);
+  y += 10;
 
   // Horizontal line
   pdf.setDrawColor(200, 200, 200);
@@ -196,11 +204,19 @@ export const exportBatchToPDF = async (controllers: ControllerData[], sectionNam
 
     let y = 15;
 
-    // Title
-    pdf.setFontSize(20);
+    // Title with Controller Number
+    pdf.setFontSize(22);
     pdf.setFont('helvetica', 'bold');
-    pdf.text('Controller Documentation', 15, y);
-    y += 12;
+    pdf.text(`Controller #${controller.controllerNumber}`, 15, y);
+    y += 8;
+
+    // Subtitle with location
+    pdf.setFontSize(12);
+    pdf.setFont('helvetica', 'normal');
+    pdf.setTextColor(100, 100, 100);
+    pdf.text(`${controller.building} - ${controller.campus}`, 15, y);
+    pdf.setTextColor(0, 0, 0);
+    y += 10;
 
     // Horizontal line
     pdf.setDrawColor(200, 200, 200);
