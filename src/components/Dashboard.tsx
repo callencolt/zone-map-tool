@@ -9,6 +9,8 @@ import {
   Search,
   Edit,
   AlertTriangle,
+  Download,
+  ChevronDown,
 } from "lucide-react";
 import {
   getControllers,
@@ -25,6 +27,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import { exportBatchToPDF } from "@/lib/exportUtils";
+import { toast } from "sonner";
 
 interface DashboardProps {
   onCreateNew: () => void;
@@ -73,6 +83,30 @@ const Dashboard = ({ onCreateNew, onEditController }: DashboardProps) => {
     if (!controller.powerLimit) return false;
     const totalPower = calculateTotalPower(controller.channels);
     return totalPower >= controller.powerLimit * 0.8;
+  };
+
+  // Group controllers hierarchically
+  const groupedControllers = filteredControllers.reduce((acc, controller) => {
+    const campus = controller.campus || 'Unknown Campus';
+    const building = controller.building || 'Unknown Building';
+    const floor = controller.floor || 'Unknown Floor';
+
+    if (!acc[campus]) acc[campus] = {};
+    if (!acc[campus][building]) acc[campus][building] = {};
+    if (!acc[campus][building][floor]) acc[campus][building][floor] = [];
+    
+    acc[campus][building][floor].push(controller);
+    return acc;
+  }, {} as Record<string, Record<string, Record<string, ControllerData[]>>>);
+
+  const handleBatchExport = async (controllers: ControllerData[], sectionName: string) => {
+    try {
+      await exportBatchToPDF(controllers, sectionName);
+      toast.success(`Exported ${controllers.length} controller(s) to PDF`);
+    } catch (error) {
+      toast.error("Failed to export PDF");
+      console.error(error);
+    }
   };
 
   return (
@@ -157,7 +191,7 @@ const Dashboard = ({ onCreateNew, onEditController }: DashboardProps) => {
           </Card>
         </div>
 
-        {/* Controllers Grid */}
+        {/* Controllers Hierarchy */}
         {filteredControllers.length === 0 ? (
           <Card className="p-12 text-center">
             <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
@@ -177,105 +211,187 @@ const Dashboard = ({ onCreateNew, onEditController }: DashboardProps) => {
             )}
           </Card>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredControllers.map((controller) => {
-              const totalPower = calculateTotalPower(controller.channels);
-              const warning = hasWarning(controller);
-
-              return (
-                <Card
-                  key={controller.id}
-                  className={`p-4 hover:shadow-lg transition-shadow ${
-                    warning ? "border-accent" : ""
-                  }`}
-                >
-                  {warning && (
-                    <div className="flex items-center gap-2 mb-3 p-2 bg-accent/10 rounded text-accent text-sm">
-                      <AlertTriangle className="h-4 w-4" />
-                      <span className="font-medium">
-                        Near power limit
-                      </span>
-                    </div>
-                  )}
-
-                  <div className="mb-4">
-                    <div className="flex items-start justify-between mb-2">
-                      <div>
-                        <h3 className="font-semibold text-foreground">
-                          Controller {controller.controllerNumber}
-                        </h3>
-                        <p className="text-sm text-muted-foreground">
-                          {controller.building} - {controller.zone}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Campus:</span>
-                        <span className="font-medium text-foreground">
-                          {controller.campus}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Floor:</span>
-                        <span className="font-medium text-foreground">
-                          {controller.floor}
-                        </span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">
-                          Channels:
-                        </span>
-                        <span className="font-medium text-foreground">
-                          {controller.channels.length}
-                        </span>
-                      </div>
-                      <div className="flex justify-between pt-2 border-t border-border">
-                        <span className="text-muted-foreground">
-                          Total Power:
-                        </span>
-                        <span className="font-bold text-primary">
-                          {totalPower.toFixed(2)} W
-                        </span>
-                      </div>
-                      {controller.powerLimit && (
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Limit:</span>
-                          <span className="text-sm text-muted-foreground">
-                            {controller.powerLimit} W (
-                            {((totalPower / controller.powerLimit) * 100).toFixed(
-                              0
-                            )}
-                            %)
-                          </span>
+          <div className="space-y-4">
+            {Object.entries(groupedControllers).map(([campus, buildings]) => (
+              <Card key={campus} className="overflow-hidden">
+                <Accordion type="multiple" className="w-full">
+                  <AccordionItem value={campus} className="border-none">
+                    <AccordionTrigger className="px-6 py-4 hover:no-underline hover:bg-muted/50">
+                      <div className="flex items-center justify-between w-full pr-4">
+                        <div className="flex items-center gap-3">
+                          <div className="p-2 bg-primary/10 rounded-lg">
+                            <FileText className="h-5 w-5 text-primary" />
+                          </div>
+                          <div className="text-left">
+                            <h3 className="font-semibold text-foreground">{campus}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {Object.values(buildings).reduce((sum, floors) => 
+                                sum + Object.values(floors).reduce((s, ctrls) => s + ctrls.length, 0), 0
+                              )} controller(s)
+                            </p>
+                          </div>
                         </div>
-                      )}
-                    </div>
-                  </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="gap-2"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const allControllers = Object.values(buildings).flatMap(floors =>
+                              Object.values(floors).flat()
+                            );
+                            handleBatchExport(allControllers, campus);
+                          }}
+                        >
+                          <Download className="h-4 w-4" />
+                          Export All
+                        </Button>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-6 pb-4">
+                      <Accordion type="multiple" className="w-full space-y-2">
+                        {Object.entries(buildings).map(([building, floors]) => (
+                          <AccordionItem key={building} value={building} className="border rounded-lg">
+                            <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/30">
+                              <div className="flex items-center justify-between w-full pr-4">
+                                <div className="text-left">
+                                  <h4 className="font-medium text-foreground">{building}</h4>
+                                  <p className="text-sm text-muted-foreground">
+                                    {Object.values(floors).reduce((sum, ctrls) => sum + ctrls.length, 0)} controller(s)
+                                  </p>
+                                </div>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="gap-2"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    const allControllers = Object.values(floors).flat();
+                                    handleBatchExport(allControllers, `${campus}_${building}`);
+                                  }}
+                                >
+                                  <Download className="h-4 w-4" />
+                                  Export
+                                </Button>
+                              </div>
+                            </AccordionTrigger>
+                            <AccordionContent className="px-4 pb-3">
+                              <Accordion type="multiple" className="w-full space-y-2">
+                                {Object.entries(floors).map(([floor, controllers]) => (
+                                  <AccordionItem key={floor} value={floor} className="border rounded-lg bg-card">
+                                    <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/20">
+                                      <div className="flex items-center justify-between w-full pr-4">
+                                        <div className="text-left">
+                                          <h5 className="font-medium text-foreground">Floor: {floor}</h5>
+                                          <p className="text-sm text-muted-foreground">
+                                            {controllers.length} controller(s)
+                                          </p>
+                                        </div>
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          className="gap-2"
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleBatchExport(controllers, `${campus}_${building}_${floor}`);
+                                          }}
+                                        >
+                                          <Download className="h-4 w-4" />
+                                          Export
+                                        </Button>
+                                      </div>
+                                    </AccordionTrigger>
+                                    <AccordionContent className="px-4 pb-3">
+                                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                        {controllers.map((controller) => {
+                                          const totalPower = calculateTotalPower(controller.channels);
+                                          const warning = hasWarning(controller);
 
-                  <div className="flex gap-2">
-                    <Button
-                      onClick={() => onEditController(controller)}
-                      variant="outline"
-                      size="sm"
-                      className="flex-1 gap-2"
-                    >
-                      <Edit className="h-4 w-4" />
-                      Edit
-                    </Button>
-                    <Button
-                      onClick={() => setDeleteId(controller.id)}
-                      variant="outline"
-                      size="sm"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
-                </Card>
-              );
-            })}
+                                          return (
+                                            <Card
+                                              key={controller.id}
+                                              className={`p-4 ${warning ? "border-accent" : ""}`}
+                                            >
+                                              {warning && (
+                                                <div className="flex items-center gap-2 mb-3 p-2 bg-accent/10 rounded text-accent text-sm">
+                                                  <AlertTriangle className="h-4 w-4" />
+                                                  <span className="font-medium">Near power limit</span>
+                                                </div>
+                                              )}
+
+                                              <div className="mb-4">
+                                                <div className="flex items-start justify-between mb-2">
+                                                  <div>
+                                                    <h3 className="font-semibold text-foreground">
+                                                      Controller {controller.controllerNumber}
+                                                    </h3>
+                                                    <p className="text-sm text-muted-foreground">
+                                                      {controller.zone}
+                                                    </p>
+                                                  </div>
+                                                </div>
+
+                                                <div className="space-y-1 text-sm">
+                                                  <div className="flex justify-between">
+                                                    <span className="text-muted-foreground">Channels:</span>
+                                                    <span className="font-medium text-foreground">
+                                                      {controller.channels.length}
+                                                    </span>
+                                                  </div>
+                                                  <div className="flex justify-between pt-2 border-t border-border">
+                                                    <span className="text-muted-foreground">Total Power:</span>
+                                                    <span className="font-bold text-primary">
+                                                      {totalPower.toFixed(2)} W
+                                                    </span>
+                                                  </div>
+                                                  {controller.powerLimit && (
+                                                    <div className="flex justify-between">
+                                                      <span className="text-muted-foreground">Limit:</span>
+                                                      <span className="text-sm text-muted-foreground">
+                                                        {controller.powerLimit} W (
+                                                        {((totalPower / controller.powerLimit) * 100).toFixed(0)}%)
+                                                      </span>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              </div>
+
+                                              <div className="flex gap-2">
+                                                <Button
+                                                  onClick={() => onEditController(controller)}
+                                                  variant="outline"
+                                                  size="sm"
+                                                  className="flex-1 gap-2"
+                                                >
+                                                  <Edit className="h-4 w-4" />
+                                                  Edit
+                                                </Button>
+                                                <Button
+                                                  onClick={() => setDeleteId(controller.id)}
+                                                  variant="outline"
+                                                  size="sm"
+                                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                                >
+                                                  <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                              </div>
+                                            </Card>
+                                          );
+                                        })}
+                                      </div>
+                                    </AccordionContent>
+                                  </AccordionItem>
+                                ))}
+                              </Accordion>
+                            </AccordionContent>
+                          </AccordionItem>
+                        ))}
+                      </Accordion>
+                    </AccordionContent>
+                  </AccordionItem>
+                </Accordion>
+              </Card>
+            ))}
           </div>
         )}
       </div>
