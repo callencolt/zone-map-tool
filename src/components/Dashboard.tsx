@@ -63,7 +63,7 @@ const Dashboard = ({ onCreateNew, onEditController }: DashboardProps) => {
   const calculateTotalPower = (channels: ControllerData["channels"]) => {
     return channels.reduce((total, channel) => {
       const power =
-        (parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0);
+        (parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1);
       return total + power;
     }, 0);
   };
@@ -223,7 +223,7 @@ const Dashboard = ({ onCreateNew, onEditController }: DashboardProps) => {
                             <FileText className="h-5 w-5 text-primary" />
                           </div>
                           <div className="text-left">
-                            <h3 className="font-semibold text-foreground">{campus}</h3>
+                            <h3 className="font-semibold text-foreground">Campus: {campus}</h3>
                             <p className="text-sm text-muted-foreground">
                               {Object.values(buildings).reduce((sum, floors) => 
                                 sum + Object.values(floors).reduce((s, ctrls) => s + ctrls.length, 0), 0
@@ -255,7 +255,7 @@ const Dashboard = ({ onCreateNew, onEditController }: DashboardProps) => {
                             <AccordionTrigger className="px-4 py-3 hover:no-underline hover:bg-muted/30">
                               <div className="flex items-center justify-between w-full pr-4">
                                 <div className="text-left">
-                                  <h4 className="font-medium text-foreground">{building}</h4>
+                                  <h4 className="font-medium text-foreground">Building: {building}</h4>
                                   <p className="text-sm text-muted-foreground">
                                     {Object.values(floors).reduce((sum, ctrls) => sum + ctrls.length, 0)} controller(s)
                                   </p>
@@ -326,7 +326,7 @@ const Dashboard = ({ onCreateNew, onEditController }: DashboardProps) => {
                                                       Controller {controller.controllerNumber}
                                                     </h3>
                                                     <p className="text-sm text-muted-foreground">
-                                                      {controller.zone}
+                                                      Zone: {controller.zone}
                                                     </p>
                                                   </div>
                                                 </div>
