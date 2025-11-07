@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Download,
   ChevronDown,
+  Settings,
 } from "lucide-react";
 import {
   getControllers,
@@ -39,9 +40,10 @@ import { toast } from "sonner";
 interface DashboardProps {
   onCreateNew: () => void;
   onEditController: (controller: ControllerData) => void;
+  onOpenFixtures: () => void;
 }
 
-const Dashboard = ({ onCreateNew, onEditController }: DashboardProps) => {
+const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardProps) => {
   const [controllers, setControllers] = useState<ControllerData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
@@ -123,10 +125,20 @@ const Dashboard = ({ onCreateNew, onEditController }: DashboardProps) => {
                 Manage and monitor all controller documentation
               </p>
             </div>
-            <Button onClick={onCreateNew} className="gap-2">
-              <Plus className="h-4 w-4" />
-              New Controller
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                onClick={onOpenFixtures}
+                variant="outline"
+                className="gap-2"
+              >
+                <Settings className="h-4 w-4" />
+                Fixture Config
+              </Button>
+              <Button onClick={onCreateNew} className="gap-2">
+                <Plus className="h-4 w-4" />
+                New Controller
+              </Button>
+            </div>
           </div>
 
           {/* Search */}

@@ -34,8 +34,17 @@ export interface ControllerTemplate {
   createdAt: string;
 }
 
+export interface FixtureConfig {
+  id: string;
+  name: string;
+  voltage: string;
+  current: string;
+  createdAt: string;
+}
+
 const CONTROLLERS_KEY = 'controller_docs';
 const TEMPLATES_KEY = 'controller_templates';
+const FIXTURES_KEY = 'fixture_configs';
 
 export const saveController = (controller: ControllerData) => {
   const controllers = getControllers();
@@ -81,4 +90,27 @@ export const getTemplates = (): ControllerTemplate[] => {
 export const deleteTemplate = (id: string) => {
   const templates = getTemplates().filter(t => t.id !== id);
   localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+};
+
+export const saveFixtureConfig = (fixture: FixtureConfig) => {
+  const fixtures = getFixtureConfigs();
+  const existingIndex = fixtures.findIndex(f => f.id === fixture.id);
+  
+  if (existingIndex >= 0) {
+    fixtures[existingIndex] = fixture;
+  } else {
+    fixtures.push(fixture);
+  }
+  
+  localStorage.setItem(FIXTURES_KEY, JSON.stringify(fixtures));
+};
+
+export const getFixtureConfigs = (): FixtureConfig[] => {
+  const data = localStorage.getItem(FIXTURES_KEY);
+  return data ? JSON.parse(data) : [];
+};
+
+export const deleteFixtureConfig = (id: string) => {
+  const fixtures = getFixtureConfigs().filter(f => f.id !== id);
+  localStorage.setItem(FIXTURES_KEY, JSON.stringify(fixtures));
 };

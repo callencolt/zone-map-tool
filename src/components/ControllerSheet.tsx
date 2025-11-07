@@ -22,6 +22,8 @@ import {
   saveTemplate,
   getTemplates,
   ControllerTemplate,
+  FixtureConfig,
+  getFixtureConfigs,
 } from "@/lib/controllerStorage";
 import { exportToExcel, exportToPDF } from "@/lib/exportUtils";
 import {
@@ -64,12 +66,14 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
     ]
   );
   const [templates, setTemplates] = useState<ControllerTemplate[]>([]);
+  const [fixtureConfigs, setFixtureConfigs] = useState<FixtureConfig[]>([]);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
   const [templateName, setTemplateName] = useState("");
   const [templateDescription, setTemplateDescription] = useState("");
 
   useEffect(() => {
     setTemplates(getTemplates());
+    setFixtureConfigs(getFixtureConfigs());
   }, []);
 
   const addChannel = () => {
@@ -96,10 +100,28 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
     setChannels(channels.filter((channel) => channel.id !== id));
   };
 
-  const updateChannel = (id: string, field: keyof Channel, value: string) => {
+  const updateChannel = (id: string, field: keyof Channel, value: string | number) => {
     setChannels(
       channels.map((channel) =>
         channel.id === id ? { ...channel, [field]: value } : channel
+      )
+    );
+  };
+
+  const applyFixtureConfig = (channelId: string, fixtureConfigId: string) => {
+    const config = fixtureConfigs.find(f => f.id === fixtureConfigId);
+    if (!config) return;
+
+    setChannels(
+      channels.map((channel) =>
+        channel.id === channelId
+          ? {
+              ...channel,
+              fixtureType: config.name,
+              voltage: config.voltage,
+              current: config.current,
+            }
+          : channel
       )
     );
   };
@@ -491,14 +513,32 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                               {channel.channelNumber}
                             </td>
                             <td className="px-4 py-3">
-                              <Input
-                                value={channel.fixtureType}
-                                onChange={(e) =>
-                                  updateChannel(channel.id, "fixtureType", e.target.value)
-                                }
-                                placeholder="e.g., LED Panel"
-                                className="h-9"
-                              />
+                              <div className="flex gap-2">
+                                {fixtureConfigs.length > 0 && (
+                                  <Select 
+                                    onValueChange={(value) => applyFixtureConfig(channel.id, value)}
+                                  >
+                                    <SelectTrigger className="h-9 w-[120px]">
+                                      <SelectValue placeholder="Quick select" />
+                                    </SelectTrigger>
+                                    <SelectContent className="bg-popover z-50">
+                                      {fixtureConfigs.map((config) => (
+                                        <SelectItem key={config.id} value={config.id}>
+                                          {config.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                )}
+                                <Input
+                                  value={channel.fixtureType}
+                                  onChange={(e) =>
+                                    updateChannel(channel.id, "fixtureType", e.target.value)
+                                  }
+                                  placeholder="e.g., LED Panel"
+                                  className="h-9 flex-1"
+                                />
+                              </div>
                             </td>
                             <td className="px-4 py-3">
                               <Input
