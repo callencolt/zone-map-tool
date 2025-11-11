@@ -133,10 +133,24 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
     return v * a * count;
   };
 
+  const getFixedLEDPower = (): number => {
+    return channels
+      .filter(channel => channel.channelNumber >= 1 && channel.channelNumber <= 22)
+      .reduce((total, channel) => {
+        return total + calculatePower(channel.voltage, channel.current, channel.parallelCount);
+      }, 0);
+  };
+
+  const getExpansionLEDPower = (): number => {
+    return channels
+      .filter(channel => channel.channelNumber >= 23 && channel.channelNumber <= 30)
+      .reduce((total, channel) => {
+        return total + calculatePower(channel.voltage, channel.current, channel.parallelCount);
+      }, 0);
+  };
+
   const getTotalPower = (): number => {
-    return channels.reduce((total, channel) => {
-      return total + calculatePower(channel.voltage, channel.current, channel.parallelCount);
-    }, 0);
+    return getFixedLEDPower() + getExpansionLEDPower();
   };
 
   const getPowerLimitWarning = (): string | null => {
@@ -437,7 +451,7 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
             </div>
           </div>
 
-          {/* Channels Table */}
+          {/* Channel Configuration Section with Template Controls */}
           <div className="mb-6">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
@@ -475,131 +489,305 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
               </div>
             </div>
 
+            {/* Fixed LED Channels (1-22) */}
+            <div className="mb-6">
+              <h3 className="text-md font-semibold text-foreground mb-3 flex items-center gap-2">
+                <span className="h-1 w-6 bg-primary/70 rounded"></span>
+                Channels 1-22 (Fixed LED)
+              </h3>
+              <div className="overflow-x-auto">
+                <div className="min-w-full inline-block align-middle">
+                  <div className="overflow-hidden border border-border rounded-lg">
+                    <table className="min-w-full divide-y divide-border">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Channel
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Fixture Type
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Voltage (V)
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Current (A)
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Qty Parallel
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Power (W)
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase tracking-wider print:hidden">
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-card divide-y divide-border">
+                        {channels
+                          .filter(channel => channel.channelNumber >= 1 && channel.channelNumber <= 22)
+                          .map((channel) => {
+                            const power = calculatePower(channel.voltage, channel.current, channel.parallelCount);
+                            return (
+                              <tr key={channel.id} className="hover:bg-muted/50 transition-colors">
+                                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-foreground">
+                                  {channel.channelNumber}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex gap-2">
+                                    {fixtureConfigs.length > 0 && (
+                                      <Select 
+                                        onValueChange={(value) => applyFixtureConfig(channel.id, value)}
+                                      >
+                                        <SelectTrigger className="h-9 w-[120px]">
+                                          <SelectValue placeholder="Quick select" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-popover z-50">
+                                          {fixtureConfigs.map((config) => (
+                                            <SelectItem key={config.id} value={config.id}>
+                                              {config.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )}
+                                    <Input
+                                      value={channel.fixtureType}
+                                      onChange={(e) =>
+                                        updateChannel(channel.id, "fixtureType", e.target.value)
+                                      }
+                                      placeholder="e.g., L"
+                                      className="h-9 flex-1"
+                                    />
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <Input
+                                    type="number"
+                                    value={channel.voltage}
+                                    onChange={(e) =>
+                                      updateChannel(channel.id, "voltage", e.target.value)
+                                    }
+                                    placeholder="0"
+                                    className="h-9 w-24"
+                                    step="0.1"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <Input
+                                    type="number"
+                                    value={channel.current}
+                                    onChange={(e) =>
+                                      updateChannel(channel.id, "current", e.target.value)
+                                    }
+                                    placeholder="0"
+                                    className="h-9 w-24"
+                                    step="0.1"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <Input
+                                    type="number"
+                                    value={channel.parallelCount}
+                                    onChange={(e) =>
+                                      updateChannel(channel.id, "parallelCount", e.target.value)
+                                    }
+                                    placeholder="1"
+                                    className="h-9 w-20"
+                                    min="1"
+                                    step="1"
+                                  />
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-foreground">
+                                  {power > 0 ? power.toFixed(2) : "—"}
+                                </td>
+                                <td className="px-4 py-3 text-right print:hidden">
+                                  <Button
+                                    onClick={() => removeChannel(channel.id)}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                      <tfoot className="bg-muted">
+                        <tr>
+                          <td colSpan={5} className="px-4 py-3 text-right text-sm font-semibold text-foreground">
+                            Total Power Output:
+                          </td>
+                          <td className="px-4 py-3 text-sm font-bold text-primary">
+                            {getFixedLEDPower().toFixed(2)} W
+                          </td>
+                          <td className="print:hidden"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Expansion Adjustable LED Channels (23-30) */}
+            <div className="mb-6">
+              <h3 className="text-md font-semibold text-foreground mb-3 flex items-center gap-2">
+                <span className="h-1 w-6 bg-primary/70 rounded"></span>
+                Channels 23-30 (Expansion Adjustable LED)
+              </h3>
+              <div className="overflow-x-auto">
+                <div className="min-w-full inline-block align-middle">
+                  <div className="overflow-hidden border border-border rounded-lg">
+                    <table className="min-w-full divide-y divide-border">
+                      <thead className="bg-muted">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Channel
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Fixture Type
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Voltage (V)
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Current (A)
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Qty Parallel
+                          </th>
+                          <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
+                            Power (W)
+                          </th>
+                          <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase tracking-wider print:hidden">
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="bg-card divide-y divide-border">
+                        {channels
+                          .filter(channel => channel.channelNumber >= 23 && channel.channelNumber <= 30)
+                          .map((channel) => {
+                            const power = calculatePower(channel.voltage, channel.current, channel.parallelCount);
+                            return (
+                              <tr key={channel.id} className="hover:bg-muted/50 transition-colors">
+                                <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-foreground">
+                                  {channel.channelNumber}
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex gap-2">
+                                    {fixtureConfigs.length > 0 && (
+                                      <Select 
+                                        onValueChange={(value) => applyFixtureConfig(channel.id, value)}
+                                      >
+                                        <SelectTrigger className="h-9 w-[120px]">
+                                          <SelectValue placeholder="Quick select" />
+                                        </SelectTrigger>
+                                        <SelectContent className="bg-popover z-50">
+                                          {fixtureConfigs.map((config) => (
+                                            <SelectItem key={config.id} value={config.id}>
+                                              {config.name}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    )}
+                                    <Input
+                                      value={channel.fixtureType}
+                                      onChange={(e) =>
+                                        updateChannel(channel.id, "fixtureType", e.target.value)
+                                      }
+                                      placeholder="e.g., L"
+                                      className="h-9 flex-1"
+                                    />
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <Input
+                                    type="number"
+                                    value={channel.voltage}
+                                    onChange={(e) =>
+                                      updateChannel(channel.id, "voltage", e.target.value)
+                                    }
+                                    placeholder="0"
+                                    className="h-9 w-24"
+                                    step="0.1"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <Input
+                                    type="number"
+                                    value={channel.current}
+                                    onChange={(e) =>
+                                      updateChannel(channel.id, "current", e.target.value)
+                                    }
+                                    placeholder="0"
+                                    className="h-9 w-24"
+                                    step="0.1"
+                                  />
+                                </td>
+                                <td className="px-4 py-3">
+                                  <Input
+                                    type="number"
+                                    value={channel.parallelCount}
+                                    onChange={(e) =>
+                                      updateChannel(channel.id, "parallelCount", e.target.value)
+                                    }
+                                    placeholder="1"
+                                    className="h-9 w-20"
+                                    min="1"
+                                    step="1"
+                                  />
+                                </td>
+                                <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-foreground">
+                                  {power > 0 ? power.toFixed(2) : "—"}
+                                </td>
+                                <td className="px-4 py-3 text-right print:hidden">
+                                  <Button
+                                    onClick={() => removeChannel(channel.id)}
+                                    variant="ghost"
+                                    size="sm"
+                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                      <tfoot className="bg-muted">
+                        <tr>
+                          <td colSpan={5} className="px-4 py-3 text-right text-sm font-semibold text-foreground">
+                            Total Power Output:
+                          </td>
+                          <td className="px-4 py-3 text-sm font-bold text-primary">
+                            {getExpansionLEDPower().toFixed(2)} W
+                          </td>
+                          <td className="print:hidden"></td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Combined Total */}
             <div className="overflow-x-auto">
               <div className="min-w-full inline-block align-middle">
-                <div className="overflow-hidden border border-border rounded-lg">
-                  <table className="min-w-full divide-y divide-border">
-                    <thead className="bg-muted">
+                <div className="overflow-hidden border-2 border-primary rounded-lg bg-primary/5">
+                  <table className="min-w-full">
+                    <tfoot className="bg-primary/10">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                          Channel
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                          Fixture Type
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                          Voltage (V)
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                          Current (A)
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                          Qty Parallel
-                        </th>
-                        <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                          Power (W)
-                        </th>
-                        <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase tracking-wider print:hidden">
-                          Action
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-card divide-y divide-border">
-                      {channels.map((channel) => {
-                        const power = calculatePower(channel.voltage, channel.current, channel.parallelCount);
-                        return (
-                          <tr key={channel.id} className="hover:bg-muted/50 transition-colors">
-                            <td className="px-4 py-3 whitespace-nowrap text-sm font-medium text-foreground">
-                              {channel.channelNumber}
-                            </td>
-                            <td className="px-4 py-3">
-                              <div className="flex gap-2">
-                                {fixtureConfigs.length > 0 && (
-                                  <Select 
-                                    onValueChange={(value) => applyFixtureConfig(channel.id, value)}
-                                  >
-                                    <SelectTrigger className="h-9 w-[120px]">
-                                      <SelectValue placeholder="Quick select" />
-                                    </SelectTrigger>
-                                    <SelectContent className="bg-popover z-50">
-                                      {fixtureConfigs.map((config) => (
-                                        <SelectItem key={config.id} value={config.id}>
-                                          {config.name}
-                                        </SelectItem>
-                                      ))}
-                                    </SelectContent>
-                                  </Select>
-                                )}
-                                <Input
-                                  value={channel.fixtureType}
-                                  onChange={(e) =>
-                                    updateChannel(channel.id, "fixtureType", e.target.value)
-                                  }
-                                  placeholder="e.g., LED Panel"
-                                  className="h-9 flex-1"
-                                />
-                              </div>
-                            </td>
-                            <td className="px-4 py-3">
-                              <Input
-                                type="number"
-                                value={channel.voltage}
-                                onChange={(e) =>
-                                  updateChannel(channel.id, "voltage", e.target.value)
-                                }
-                                placeholder="0"
-                                className="h-9 w-24"
-                                step="0.1"
-                              />
-                            </td>
-                            <td className="px-4 py-3">
-                              <Input
-                                type="number"
-                                value={channel.current}
-                                onChange={(e) =>
-                                  updateChannel(channel.id, "current", e.target.value)
-                                }
-                                placeholder="0"
-                                className="h-9 w-24"
-                                step="0.1"
-                              />
-                            </td>
-                            <td className="px-4 py-3">
-                              <Input
-                                type="number"
-                                value={channel.parallelCount}
-                                onChange={(e) =>
-                                  updateChannel(channel.id, "parallelCount", e.target.value)
-                                }
-                                placeholder="1"
-                                className="h-9 w-20"
-                                min="1"
-                                step="1"
-                              />
-                            </td>
-                            <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-foreground">
-                              {power > 0 ? power.toFixed(2) : "—"}
-                            </td>
-                            <td className="px-4 py-3 text-right print:hidden">
-                              <Button
-                                onClick={() => removeChannel(channel.id)}
-                                variant="ghost"
-                                size="sm"
-                                className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                    <tfoot className="bg-muted">
-                      <tr>
-                        <td colSpan={5} className="px-4 py-3 text-right text-sm font-semibold text-foreground">
-                          Total Power Output:
+                        <td colSpan={5} className="px-4 py-4 text-right text-base font-bold text-foreground">
+                          Combined Total Power Output:
                         </td>
-                        <td className="px-4 py-3 text-sm font-bold text-primary">
+                        <td className="px-4 py-4 text-base font-bold text-primary">
                           {getTotalPower().toFixed(2)} W
                         </td>
                         <td className="print:hidden"></td>
