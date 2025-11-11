@@ -76,9 +76,41 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
     setFixtureConfigs(getFixtureConfigs());
   }, []);
 
-  const addChannel = () => {
-    const newChannelNumber =
-      channels.length > 0 ? Math.max(...channels.map((c) => c.channelNumber)) + 1 : 1;
+  const addFixedLEDChannel = () => {
+    const fixedChannels = channels.filter(c => c.channelNumber >= 1 && c.channelNumber <= 22);
+    const newChannelNumber = fixedChannels.length > 0 
+      ? Math.max(...fixedChannels.map(c => c.channelNumber)) + 1 
+      : 1;
+    
+    if (newChannelNumber > 22) {
+      toast.error("Cannot add more Fixed LED channels (maximum 22)");
+      return;
+    }
+    
+    setChannels([
+      ...channels,
+      {
+        id: Date.now().toString(),
+        channelNumber: newChannelNumber,
+        fixtureType: "",
+        voltage: "",
+        current: "",
+        parallelCount: 1,
+      },
+    ]);
+  };
+
+  const addExpansionLEDChannel = () => {
+    const expansionChannels = channels.filter(c => c.channelNumber >= 23 && c.channelNumber <= 30);
+    const newChannelNumber = expansionChannels.length > 0 
+      ? Math.max(...expansionChannels.map(c => c.channelNumber)) + 1 
+      : 23;
+    
+    if (newChannelNumber > 30) {
+      toast.error("Cannot add more Expansion LED channels (maximum 30)");
+      return;
+    }
+    
     setChannels([
       ...channels,
       {
@@ -482,10 +514,6 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                   <BookTemplate className="h-4 w-4" />
                   Save as Template
                 </Button>
-                <Button onClick={addChannel} size="sm" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Channel
-                </Button>
               </div>
             </div>
 
@@ -631,6 +659,12 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                   </div>
                 </div>
               </div>
+              <div className="mt-3 print:hidden">
+                <Button onClick={addFixedLEDChannel} size="sm" variant="outline" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Fixed LED Channel
+                </Button>
+              </div>
             </div>
 
             {/* Expansion Adjustable LED Channels (23-30) */}
@@ -774,6 +808,12 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                     </table>
                   </div>
                 </div>
+              </div>
+              <div className="mt-3 print:hidden">
+                <Button onClick={addExpansionLEDChannel} size="sm" variant="outline" className="gap-2">
+                  <Plus className="h-4 w-4" />
+                  Add Expansion LED Channel
+                </Button>
               </div>
             </div>
 
