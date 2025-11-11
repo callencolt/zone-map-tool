@@ -69,6 +69,25 @@ export const deleteController = (id: string) => {
   localStorage.setItem(CONTROLLERS_KEY, JSON.stringify(controllers));
 };
 
+export const deleteControllersByCampus = (campus: string) => {
+  const controllers = getControllers().filter(c => c.campus !== campus);
+  localStorage.setItem(CONTROLLERS_KEY, JSON.stringify(controllers));
+};
+
+export const deleteControllersByBuilding = (campus: string, building: string) => {
+  const controllers = getControllers().filter(
+    c => !(c.campus === campus && c.building === building)
+  );
+  localStorage.setItem(CONTROLLERS_KEY, JSON.stringify(controllers));
+};
+
+export const deleteControllersByFloor = (campus: string, building: string, floor: string) => {
+  const controllers = getControllers().filter(
+    c => !(c.campus === campus && c.building === building && c.floor === floor)
+  );
+  localStorage.setItem(CONTROLLERS_KEY, JSON.stringify(controllers));
+};
+
 export const saveTemplate = (template: ControllerTemplate) => {
   const templates = getTemplates();
   const existingIndex = templates.findIndex(t => t.id === template.id);

@@ -16,6 +16,9 @@ import {
 import {
   getControllers,
   deleteController,
+  deleteControllersByCampus,
+  deleteControllersByBuilding,
+  deleteControllersByFloor,
   ControllerData,
 } from "@/lib/controllerStorage";
 import {
@@ -47,6 +50,9 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
   const [controllers, setControllers] = useState<ControllerData[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [deleteCampus, setDeleteCampus] = useState<string | null>(null);
+  const [deleteBuilding, setDeleteBuilding] = useState<{ campus: string; building: string } | null>(null);
+  const [deleteFloor, setDeleteFloor] = useState<{ campus: string; building: string; floor: string } | null>(null);
 
   useEffect(() => {
     loadControllers();
@@ -60,6 +66,27 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
     deleteController(id);
     loadControllers();
     setDeleteId(null);
+  };
+
+  const handleDeleteCampus = (campus: string) => {
+    deleteControllersByCampus(campus);
+    loadControllers();
+    setDeleteCampus(null);
+    toast.success(`Deleted all controllers in campus: ${campus}`);
+  };
+
+  const handleDeleteBuilding = (campus: string, building: string) => {
+    deleteControllersByBuilding(campus, building);
+    loadControllers();
+    setDeleteBuilding(null);
+    toast.success(`Deleted all controllers in building: ${building}`);
+  };
+
+  const handleDeleteFloor = (campus: string, building: string, floor: string) => {
+    deleteControllersByFloor(campus, building, floor);
+    loadControllers();
+    setDeleteFloor(null);
+    toast.success(`Deleted all controllers on floor: ${floor}`);
   };
 
   const calculateTotalPower = (channels: ControllerData["channels"]) => {
@@ -243,21 +270,34 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
                             </p>
                           </div>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="gap-2"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            const allControllers = Object.values(buildings).flatMap(floors =>
-                              Object.values(floors).flat()
-                            );
-                            handleBatchExport(allControllers, campus);
-                          }}
-                        >
-                          <Download className="h-4 w-4" />
-                          Export All
-                        </Button>
+                        <div className="flex gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-2"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const allControllers = Object.values(buildings).flatMap(floors =>
+                                Object.values(floors).flat()
+                              );
+                              handleBatchExport(allControllers, campus);
+                            }}
+                          >
+                            <Download className="h-4 w-4" />
+                            Export All
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setDeleteCampus(campus);
+                            }}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </AccordionTrigger>
                     <AccordionContent className="px-6 pb-4">
@@ -272,19 +312,32 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
                                     {Object.values(floors).reduce((sum, ctrls) => sum + ctrls.length, 0)} controller(s)
                                   </p>
                                 </div>
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="gap-2"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    const allControllers = Object.values(floors).flat();
-                                    handleBatchExport(allControllers, `${campus}_${building}`);
-                                  }}
-                                >
-                                  <Download className="h-4 w-4" />
-                                  Export
-                                </Button>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="gap-2"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      const allControllers = Object.values(floors).flat();
+                                      handleBatchExport(allControllers, `${campus}_${building}`);
+                                    }}
+                                  >
+                                    <Download className="h-4 w-4" />
+                                    Export
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setDeleteBuilding({ campus, building });
+                                    }}
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                  </Button>
+                                </div>
                               </div>
                             </AccordionTrigger>
                             <AccordionContent className="px-4 pb-3">
@@ -299,18 +352,31 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
                                             {controllers.length} controller(s)
                                           </p>
                                         </div>
-                                        <Button
-                                          variant="ghost"
-                                          size="sm"
-                                          className="gap-2"
-                                          onClick={(e) => {
-                                            e.stopPropagation();
-                                            handleBatchExport(controllers, `${campus}_${building}_${floor}`);
-                                          }}
-                                        >
-                                          <Download className="h-4 w-4" />
-                                          Export
-                                        </Button>
+                                        <div className="flex gap-2">
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="gap-2"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleBatchExport(controllers, `${campus}_${building}_${floor}`);
+                                            }}
+                                          >
+                                            <Download className="h-4 w-4" />
+                                            Export
+                                          </Button>
+                                          <Button
+                                            variant="ghost"
+                                            size="sm"
+                                            className="gap-2 text-destructive hover:text-destructive hover:bg-destructive/10"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              setDeleteFloor({ campus, building, floor });
+                                            }}
+                                          >
+                                            <Trash2 className="h-4 w-4" />
+                                          </Button>
+                                        </div>
                                       </div>
                                     </AccordionTrigger>
                                     <AccordionContent className="px-4 pb-3">
@@ -408,7 +474,7 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
         )}
       </div>
 
-      {/* Delete Confirmation Dialog */}
+      {/* Delete Controller Confirmation Dialog */}
       <AlertDialog open={!!deleteId} onOpenChange={() => setDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -425,6 +491,72 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Campus Confirmation Dialog */}
+      <AlertDialog open={!!deleteCampus} onOpenChange={() => setDeleteCampus(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Entire Campus?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete ALL controllers
+              in campus "{deleteCampus}" including all buildings, floors, and zones.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteCampus && handleDeleteCampus(deleteCampus)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Building Confirmation Dialog */}
+      <AlertDialog open={!!deleteBuilding} onOpenChange={() => setDeleteBuilding(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Entire Building?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete ALL controllers
+              in building "{deleteBuilding?.building}" including all floors and zones.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteBuilding && handleDeleteBuilding(deleteBuilding.campus, deleteBuilding.building)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete All
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Floor Confirmation Dialog */}
+      <AlertDialog open={!!deleteFloor} onOpenChange={() => setDeleteFloor(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Entire Floor?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete ALL controllers
+              on floor "{deleteFloor?.floor}" including all zones.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => deleteFloor && handleDeleteFloor(deleteFloor.campus, deleteFloor.building, deleteFloor.floor)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete All
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
