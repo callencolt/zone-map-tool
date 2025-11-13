@@ -41,6 +41,11 @@ const FixtureConfigManager = ({ onBack }: FixtureConfigManagerProps) => {
   });
   const [editingId, setEditingId] = useState<string | null>(null);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [editingInline, setEditingInline] = useState<{
+    id: string;
+    voltage: string;
+    current: string;
+  } | null>(null);
 
   useEffect(() => {
     loadFixtures();
@@ -72,17 +77,33 @@ const FixtureConfigManager = ({ onBack }: FixtureConfigManagerProps) => {
   };
 
   const handleEdit = (fixture: FixtureConfig) => {
-    setNewFixture({
-      name: fixture.name,
+    setEditingInline({
+      id: fixture.id,
       voltage: fixture.voltage,
       current: fixture.current,
     });
-    setEditingId(fixture.id);
+  };
+
+  const handleSaveInline = () => {
+    if (!editingInline) return;
     
-    // Scroll to the form
-    setTimeout(() => {
-      document.getElementById('fixture-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
+    const fixture = fixtures.find(f => f.id === editingInline.id);
+    if (!fixture) return;
+
+    const updatedFixture: FixtureConfig = {
+      ...fixture,
+      voltage: editingInline.voltage,
+      current: editingInline.current,
+    };
+
+    saveFixtureConfig(updatedFixture);
+    loadFixtures();
+    setEditingInline(null);
+    toast.success("Fixture updated");
+  };
+
+  const handleCancelInline = () => {
+    setEditingInline(null);
   };
 
   const handleDelete = (id: string) => {
@@ -239,6 +260,8 @@ const FixtureConfigManager = ({ onBack }: FixtureConfigManagerProps) => {
                       <tbody className="bg-card divide-y divide-border">
                         {fixtures.map((fixture) => {
                           const power = parseFloat(fixture.voltage) * parseFloat(fixture.current);
+                          const isEditing = editingInline?.id === fixture.id;
+                          
                           return (
                             <tr
                               key={fixture.id}
@@ -248,31 +271,87 @@ const FixtureConfigManager = ({ onBack }: FixtureConfigManagerProps) => {
                                 {fixture.name}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                                {fixture.voltage}
+                                {isEditing ? (
+                                  <Input
+                                    type="number"
+                                    value={editingInline.voltage}
+                                    onChange={(e) =>
+                                      setEditingInline({
+                                        ...editingInline,
+                                        voltage: e.target.value,
+                                      })
+                                    }
+                                    className="w-24 h-8"
+                                    step="0.1"
+                                  />
+                                ) : (
+                                  fixture.voltage
+                                )}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                                {fixture.current}
+                                {isEditing ? (
+                                  <Input
+                                    type="number"
+                                    value={editingInline.current}
+                                    onChange={(e) =>
+                                      setEditingInline({
+                                        ...editingInline,
+                                        current: e.target.value,
+                                      })
+                                    }
+                                    className="w-24 h-8"
+                                    step="0.001"
+                                  />
+                                ) : (
+                                  fixture.current
+                                )}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-sm text-muted-foreground">
-                                {power.toFixed(3)}
+                                {isEditing
+                                  ? (
+                                      parseFloat(editingInline.voltage) *
+                                      parseFloat(editingInline.current)
+                                    ).toFixed(3)
+                                  : power.toFixed(3)}
                               </td>
                               <td className="px-4 py-3 whitespace-nowrap text-right text-sm">
                                 <div className="flex gap-2 justify-end">
-                                  <Button
-                                    onClick={() => handleEdit(fixture)}
-                                    variant="ghost"
-                                    size="sm"
-                                  >
-                                    Edit
-                                  </Button>
-                                  <Button
-                                    onClick={() => setDeleteId(fixture.id)}
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive hover:text-destructive"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
+                                  {isEditing ? (
+                                    <>
+                                      <Button
+                                        onClick={handleSaveInline}
+                                        variant="ghost"
+                                        size="sm"
+                                      >
+                                        <Save className="h-4 w-4" />
+                                      </Button>
+                                      <Button
+                                        onClick={handleCancelInline}
+                                        variant="ghost"
+                                        size="sm"
+                                      >
+                                        Cancel
+                                      </Button>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Button
+                                        onClick={() => handleEdit(fixture)}
+                                        variant="ghost"
+                                        size="sm"
+                                      >
+                                        Edit
+                                      </Button>
+                                      <Button
+                                        onClick={() => setDeleteId(fixture.id)}
+                                        variant="ghost"
+                                        size="sm"
+                                        className="text-destructive hover:text-destructive"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </Button>
+                                    </>
+                                  )}
                                 </div>
                               </td>
                             </tr>
