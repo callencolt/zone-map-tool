@@ -37,7 +37,7 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { exportBatchToPDF, exportAllToExcel } from "@/lib/exportUtils";
+import { exportBatchToPDF, exportAllToExcel, exportBatchToExcel } from "@/lib/exportUtils";
 import { toast } from "sonner";
 import {
   DropdownMenu,
@@ -134,12 +134,28 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
     return acc;
   }, {} as Record<string, Record<string, Record<string, ControllerData[]>>>);
 
-  const handleBatchExport = async (controllers: ControllerData[], sectionName: string) => {
+  const handleExportSectionPDF = async (
+    controllers: ControllerData[],
+    sectionName: string
+  ) => {
     try {
       await exportBatchToPDF(controllers, sectionName);
       toast.success(`Exported ${controllers.length} controller(s) to PDF`);
     } catch (error) {
       toast.error("Failed to export PDF");
+      console.error(error);
+    }
+  };
+
+  const handleExportSectionExcel = (
+    controllers: ControllerData[],
+    sectionName: string
+  ) => {
+    try {
+      exportBatchToExcel(controllers, sectionName);
+      toast.success(`Exported ${controllers.length} controller(s) to Excel`);
+    } catch (error) {
+      toast.error("Failed to export Excel");
       console.error(error);
     }
   };
@@ -314,21 +330,44 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
                           </div>
                         </div>
                         <div className="flex gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="gap-2"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              const allControllers = Object.values(buildings).flatMap(floors =>
-                                Object.values(floors).flat()
-                              );
-                              handleBatchExport(allControllers, campus);
-                            }}
-                          >
-                            <Download className="h-4 w-4" />
-                            Export All
-                          </Button>
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Download className="h-4 w-4" />
+                                Export
+                                <ChevronDown className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const allControllers = Object.values(buildings).flatMap(floors =>
+                                    Object.values(floors).flat()
+                                  );
+                                  handleExportSectionPDF(allControllers, campus);
+                                }}
+                              >
+                                Export to PDF
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  const allControllers = Object.values(buildings).flatMap(floors =>
+                                    Object.values(floors).flat()
+                                  );
+                                  handleExportSectionExcel(allControllers, campus);
+                                }}
+                              >
+                                Export to Excel
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                           <Button
                             variant="ghost"
                             size="sm"
@@ -356,19 +395,40 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
                                   </p>
                                 </div>
                                 <div className="flex gap-2">
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="gap-2"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      const allControllers = Object.values(floors).flat();
-                                      handleBatchExport(allControllers, `${campus}_${building}`);
-                                    }}
-                                  >
-                                    <Download className="h-4 w-4" />
-                                    Export
-                                  </Button>
+                                  <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        className="gap-2"
+                                        onClick={(e) => e.stopPropagation()}
+                                      >
+                                        <Download className="h-4 w-4" />
+                                        Export
+                                        <ChevronDown className="h-4 w-4" />
+                                      </Button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                                      <DropdownMenuItem
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const allControllers = Object.values(floors).flat();
+                                          handleExportSectionPDF(allControllers, `${campus}_${building}`);
+                                        }}
+                                      >
+                                        Export to PDF
+                                      </DropdownMenuItem>
+                                      <DropdownMenuItem
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          const allControllers = Object.values(floors).flat();
+                                          handleExportSectionExcel(allControllers, `${campus}_${building}`);
+                                        }}
+                                      >
+                                        Export to Excel
+                                      </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                  </DropdownMenu>
                                   <Button
                                     variant="ghost"
                                     size="sm"
@@ -396,18 +456,38 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
                                           </p>
                                         </div>
                                         <div className="flex gap-2">
-                                          <Button
-                                            variant="ghost"
-                                            size="sm"
-                                            className="gap-2"
-                                            onClick={(e) => {
-                                              e.stopPropagation();
-                                              handleBatchExport(controllers, `${campus}_${building}_${floor}`);
-                                            }}
-                                          >
-                                            <Download className="h-4 w-4" />
-                                            Export
-                                          </Button>
+                                          <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                              <Button
+                                                variant="ghost"
+                                                size="sm"
+                                                className="gap-2"
+                                                onClick={(e) => e.stopPropagation()}
+                                              >
+                                                <Download className="h-4 w-4" />
+                                                Export
+                                                <ChevronDown className="h-4 w-4" />
+                                              </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent onClick={(e) => e.stopPropagation()}>
+                                              <DropdownMenuItem
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleExportSectionPDF(controllers, `${campus}_${building}_${floor}`);
+                                                }}
+                                              >
+                                                Export to PDF
+                                              </DropdownMenuItem>
+                                              <DropdownMenuItem
+                                                onClick={(e) => {
+                                                  e.stopPropagation();
+                                                  handleExportSectionExcel(controllers, `${campus}_${building}_${floor}`);
+                                                }}
+                                              >
+                                                Export to Excel
+                                              </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                          </DropdownMenu>
                                           <Button
                                             variant="ghost"
                                             size="sm"

@@ -342,7 +342,7 @@ export const exportBatchToPDF = async (controllers: ControllerData[], sectionNam
   pdf.save(fileName);
 };
 
-export const exportAllToExcel = (controllers: ControllerData[]) => {
+export const exportBatchToExcel = (controllers: ControllerData[], sectionName: string) => {
   const workbook = XLSX.utils.book_new();
 
   controllers.forEach((controller) => {
@@ -383,6 +383,10 @@ export const exportAllToExcel = (controllers: ControllerData[]) => {
     XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
   });
 
-  const fileName = `All_Controllers_${new Date().toISOString().split('T')[0]}.xlsx`;
+  const fileName = `${sectionName.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.xlsx`;
   XLSX.writeFile(workbook, fileName);
+};
+
+export const exportAllToExcel = (controllers: ControllerData[]) => {
+  exportBatchToExcel(controllers, 'All_Controllers');
 };
