@@ -341,3 +341,48 @@ export const exportBatchToPDF = async (controllers: ControllerData[], sectionNam
   const fileName = `${sectionName.replace(/\s+/g, '_')}_Controllers_${new Date().toISOString().split('T')[0]}.pdf`;
   pdf.save(fileName);
 };
+
+export const exportAllToExcel = (controllers: ControllerData[]) => {
+  const workbook = XLSX.utils.book_new();
+
+  controllers.forEach((controller) => {
+    const worksheetData = [
+      ['Controller Documentation Sheet'],
+      [],
+      ['Campus', controller.campus],
+      ['Building', controller.building],
+      ['Floor', controller.floor],
+      ['Zone', controller.zone],
+      ['Controller Number', controller.controllerNumber],
+      ['Power Limit (W)', controller.powerLimit?.toString() || ''],
+      [],
+      ['Channel', 'Fixture Type', 'Voltage (V)', 'Current (A)', 'Qty Parallel', 'Power (W)'],
+    ];
+
+    controller.channels.forEach(channel => {
+      const power = (parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1);
+      worksheetData.push([
+        channel.channelNumber.toString(),
+        channel.fixtureType,
+        channel.voltage,
+        channel.current,
+        (channel.parallelCount || 1).toString(),
+        power.toFixed(2),
+      ]);
+    });
+
+    const totalPower = controller.channels.reduce((total, channel) => {
+      return total + ((parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1));
+    }, 0);
+
+    worksheetData.push([]);
+    worksheetData.push(['', '', '', '', 'Total Power:', totalPower.toFixed(2) + ' W']);
+
+    const worksheet = XLSX.utils.aoa_to_sheet(worksheetData);
+    const sheetName = `${controller.controllerNumber}`.substring(0, 31);
+    XLSX.utils.book_append_sheet(workbook, worksheet, sheetName);
+  });
+
+  const fileName = `All_Controllers_${new Date().toISOString().split('T')[0]}.xlsx`;
+  XLSX.writeFile(workbook, fileName);
+};

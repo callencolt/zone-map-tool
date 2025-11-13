@@ -37,8 +37,14 @@ import {
   AccordionItem,
   AccordionTrigger,
 } from "@/components/ui/accordion";
-import { exportBatchToPDF } from "@/lib/exportUtils";
+import { exportBatchToPDF, exportAllToExcel } from "@/lib/exportUtils";
 import { toast } from "sonner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface DashboardProps {
   onCreateNew: () => void;
@@ -138,6 +144,26 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
     }
   };
 
+  const handleExportAllPDF = async () => {
+    try {
+      await exportBatchToPDF(controllers, "All_Controllers");
+      toast.success(`Exported ${controllers.length} controller(s) to PDF`);
+    } catch (error) {
+      toast.error("Failed to export PDF");
+      console.error(error);
+    }
+  };
+
+  const handleExportAllExcel = () => {
+    try {
+      exportAllToExcel(controllers);
+      toast.success(`Exported ${controllers.length} controller(s) to Excel`);
+    } catch (error) {
+      toast.error("Failed to export Excel");
+      console.error(error);
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
       <div className="max-w-7xl mx-auto">
@@ -153,6 +179,23 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
               </p>
             </div>
             <div className="flex gap-2">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" className="gap-2">
+                    <Download className="h-4 w-4" />
+                    Export All
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent>
+                  <DropdownMenuItem onClick={handleExportAllPDF}>
+                    Export to PDF
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={handleExportAllExcel}>
+                    Export to Excel
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <Button
                 onClick={onOpenFixtures}
                 variant="outline"
