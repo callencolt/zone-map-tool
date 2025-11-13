@@ -4,8 +4,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card } from "@/components/ui/card";
 import {
-  Plus,
-  Trash2,
   FileText,
   Download,
   Save,
@@ -60,11 +58,20 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
   const [powerLimit, setPowerLimit] = useState(
     initialData?.powerLimit?.toString() || ""
   );
-  const [channels, setChannels] = useState<Channel[]>(
-    initialData?.channels || [
-      { id: "1", channelNumber: 1, fixtureType: "", voltage: "", current: "", parallelCount: 1 },
-    ]
-  );
+  const [channels, setChannels] = useState<Channel[]>(() => {
+    if (initialData?.channels) {
+      return initialData.channels;
+    }
+    // Initialize all 30 channels by default
+    return Array.from({ length: 30 }, (_, i) => ({
+      id: `${i + 1}`,
+      channelNumber: i + 1,
+      fixtureType: "",
+      voltage: "",
+      current: "",
+      parallelCount: 1,
+    }));
+  });
   const [templates, setTemplates] = useState<ControllerTemplate[]>([]);
   const [fixtureConfigs, setFixtureConfigs] = useState<FixtureConfig[]>([]);
   const [showTemplateDialog, setShowTemplateDialog] = useState(false);
@@ -76,61 +83,6 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
     setFixtureConfigs(getFixtureConfigs());
   }, []);
 
-  const addFixedLEDChannel = () => {
-    const fixedChannels = channels.filter(c => c.channelNumber >= 1 && c.channelNumber <= 22);
-    const newChannelNumber = fixedChannels.length > 0 
-      ? Math.max(...fixedChannels.map(c => c.channelNumber)) + 1 
-      : 1;
-    
-    if (newChannelNumber > 22) {
-      toast.error("Cannot add more Fixed LED channels (maximum 22)");
-      return;
-    }
-    
-    setChannels([
-      ...channels,
-      {
-        id: Date.now().toString(),
-        channelNumber: newChannelNumber,
-        fixtureType: "",
-        voltage: "",
-        current: "",
-        parallelCount: 1,
-      },
-    ]);
-  };
-
-  const addExpansionLEDChannel = () => {
-    const expansionChannels = channels.filter(c => c.channelNumber >= 23 && c.channelNumber <= 30);
-    const newChannelNumber = expansionChannels.length > 0 
-      ? Math.max(...expansionChannels.map(c => c.channelNumber)) + 1 
-      : 23;
-    
-    if (newChannelNumber > 30) {
-      toast.error("Cannot add more Expansion LED channels (maximum 30)");
-      return;
-    }
-    
-    setChannels([
-      ...channels,
-      {
-        id: Date.now().toString(),
-        channelNumber: newChannelNumber,
-        fixtureType: "",
-        voltage: "",
-        current: "",
-        parallelCount: 1,
-      },
-    ]);
-  };
-
-  const removeChannel = (id: string) => {
-    if (channels.length === 1) {
-      toast.error("Cannot remove the last channel");
-      return;
-    }
-    setChannels(channels.filter((channel) => channel.id !== id));
-  };
 
   const updateChannel = (id: string, field: keyof Channel, value: string | number) => {
     setChannels(
@@ -547,9 +499,6 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                           <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                             Power (W)
                           </th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase tracking-wider print:hidden">
-                            Action
-                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-card divide-y divide-border">
@@ -630,16 +579,6 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                                 <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-foreground">
                                   {power > 0 ? power.toFixed(2) : "—"}
                                 </td>
-                                <td className="px-4 py-3 text-right print:hidden">
-                                  <Button
-                                    onClick={() => removeChannel(channel.id)}
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </td>
                               </tr>
                             );
                           })}
@@ -652,18 +591,11 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                           <td className="px-4 py-3 text-sm font-bold text-primary">
                             {getFixedLEDPower().toFixed(2)} W
                           </td>
-                          <td className="print:hidden"></td>
                         </tr>
                       </tfoot>
                     </table>
                   </div>
                 </div>
-              </div>
-              <div className="mt-3 print:hidden">
-                <Button onClick={addFixedLEDChannel} size="sm" variant="outline" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Fixed LED Channel
-                </Button>
               </div>
             </div>
 
@@ -696,9 +628,6 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                           </th>
                           <th className="px-4 py-3 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
                             Power (W)
-                          </th>
-                          <th className="px-4 py-3 text-right text-xs font-semibold text-foreground uppercase tracking-wider print:hidden">
-                            Action
                           </th>
                         </tr>
                       </thead>
@@ -780,16 +709,6 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                                 <td className="px-4 py-3 whitespace-nowrap text-sm font-semibold text-foreground">
                                   {power > 0 ? power.toFixed(2) : "—"}
                                 </td>
-                                <td className="px-4 py-3 text-right print:hidden">
-                                  <Button
-                                    onClick={() => removeChannel(channel.id)}
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                  </Button>
-                                </td>
                               </tr>
                             );
                           })}
@@ -802,18 +721,11 @@ const ControllerSheet = ({ initialData, onBack }: ControllerSheetProps) => {
                           <td className="px-4 py-3 text-sm font-bold text-primary">
                             {getExpansionLEDPower().toFixed(2)} W
                           </td>
-                          <td className="print:hidden"></td>
                         </tr>
                       </tfoot>
                     </table>
                   </div>
                 </div>
-              </div>
-              <div className="mt-3 print:hidden">
-                <Button onClick={addExpansionLEDChannel} size="sm" variant="outline" className="gap-2">
-                  <Plus className="h-4 w-4" />
-                  Add Expansion LED Channel
-                </Button>
               </div>
             </div>
 
