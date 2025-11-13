@@ -78,6 +78,11 @@ const FixtureConfigManager = ({ onBack }: FixtureConfigManagerProps) => {
       current: fixture.current,
     });
     setEditingId(fixture.id);
+    
+    // Scroll to the form
+    setTimeout(() => {
+      document.getElementById('fixture-form')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
 
   const handleDelete = (id: string) => {
@@ -119,7 +124,7 @@ const FixtureConfigManager = ({ onBack }: FixtureConfigManagerProps) => {
           </div>
 
           {/* Add/Edit Form */}
-          <div className="mb-8">
+          <div id="fixture-form" className="mb-8">
             <h2 className="text-lg font-semibold text-foreground mb-4 flex items-center gap-2">
               <span className="h-1 w-8 bg-primary rounded"></span>
               {editingId ? "Edit Fixture" : "Add New Fixture"}
