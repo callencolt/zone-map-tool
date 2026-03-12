@@ -2,6 +2,12 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { ControllerData } from './controllerStorage';
 
+const getUsedChannels = (controller: ControllerData) => {
+  return controller.channels.filter(ch => 
+    ch.fixtureType || ch.voltage || ch.current
+  );
+};
+
 export const exportToExcel = (controller: ControllerData) => {
   const worksheetData = [
     ['Controller Documentation Sheet'],
@@ -16,7 +22,9 @@ export const exportToExcel = (controller: ControllerData) => {
     ['Channel', 'Fixture Type', 'Voltage (V)', 'Current (A)', 'Qty Parallel', 'Power (W)'],
   ];
 
-  controller.channels.forEach(channel => {
+  const usedChannels = getUsedChannels(controller);
+
+  usedChannels.forEach(channel => {
     const power = (parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1);
     worksheetData.push([
       channel.channelNumber.toString(),
@@ -28,7 +36,7 @@ export const exportToExcel = (controller: ControllerData) => {
     ]);
   });
 
-  const totalPower = controller.channels.reduce((total, channel) => {
+  const totalPower = usedChannels.reduce((total, channel) => {
     return total + ((parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1));
   }, 0);
 
@@ -128,10 +136,11 @@ export const exportToPDF = async (elementId: string, controller: ControllerData)
   y += 8;
 
   // Table rows
-  pdf.setFont('helvetica', 'normal');
-  let totalPower = 0;
+    pdf.setFont('helvetica', 'normal');
+    let totalPower = 0;
+    const usedChannels = getUsedChannels(controller);
 
-  controller.channels.forEach((channel) => {
+    usedChannels.forEach((channel, chIndex) => {
     const power = (parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1);
     totalPower += power;
 
@@ -146,7 +155,7 @@ export const exportToPDF = async (elementId: string, controller: ControllerData)
     ];
 
     // Draw row background
-    if (controller.channels.indexOf(channel) % 2 === 0) {
+      if (chIndex % 2 === 0) {
       pdf.setFillColor(250, 250, 250);
       pdf.rect(15, y - 5, pageWidth - 30, 7, 'F');
     }
@@ -279,10 +288,11 @@ export const exportBatchToPDF = async (controllers: ControllerData[], sectionNam
     y += 8;
 
     // Table rows
-    pdf.setFont('helvetica', 'normal');
-    let totalPower = 0;
+  pdf.setFont('helvetica', 'normal');
+  let totalPower = 0;
+  const usedChannels = getUsedChannels(controller);
 
-    controller.channels.forEach((channel) => {
+  usedChannels.forEach((channel, chIndex) => {
       const power = (parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1);
       totalPower += power;
 
@@ -297,7 +307,7 @@ export const exportBatchToPDF = async (controllers: ControllerData[], sectionNam
       ];
 
       // Draw row background
-      if (controller.channels.indexOf(channel) % 2 === 0) {
+    if (chIndex % 2 === 0) {
         pdf.setFillColor(250, 250, 250);
         pdf.rect(15, y - 5, pageWidth - 30, 7, 'F');
       }
@@ -359,7 +369,9 @@ export const exportBatchToExcel = (controllers: ControllerData[], sectionName: s
       ['Channel', 'Fixture Type', 'Voltage (V)', 'Current (A)', 'Qty Parallel', 'Power (W)'],
     ];
 
-    controller.channels.forEach(channel => {
+    const usedChannels = getUsedChannels(controller);
+
+    usedChannels.forEach(channel => {
       const power = (parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1);
       worksheetData.push([
         channel.channelNumber.toString(),
@@ -371,7 +383,7 @@ export const exportBatchToExcel = (controllers: ControllerData[], sectionName: s
       ]);
     });
 
-    const totalPower = controller.channels.reduce((total, channel) => {
+    const totalPower = usedChannels.reduce((total, channel) => {
       return total + ((parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1));
     }, 0);
 
