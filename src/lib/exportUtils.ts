@@ -288,10 +288,11 @@ export const exportBatchToPDF = async (controllers: ControllerData[], sectionNam
     y += 8;
 
     // Table rows
-    pdf.setFont('helvetica', 'normal');
-    let totalPower = 0;
+  pdf.setFont('helvetica', 'normal');
+  let totalPower = 0;
+  const usedChannels = getUsedChannels(controller);
 
-    controller.channels.forEach((channel) => {
+  usedChannels.forEach((channel, chIndex) => {
       const power = (parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1);
       totalPower += power;
 
