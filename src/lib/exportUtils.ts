@@ -22,7 +22,9 @@ export const exportToExcel = (controller: ControllerData) => {
     ['Channel', 'Fixture Type', 'Voltage (V)', 'Current (A)', 'Qty Parallel', 'Power (W)'],
   ];
 
-  controller.channels.forEach(channel => {
+  const usedChannels = getUsedChannels(controller);
+
+  usedChannels.forEach(channel => {
     const power = (parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1);
     worksheetData.push([
       channel.channelNumber.toString(),
@@ -34,7 +36,7 @@ export const exportToExcel = (controller: ControllerData) => {
     ]);
   });
 
-  const totalPower = controller.channels.reduce((total, channel) => {
+  const totalPower = usedChannels.reduce((total, channel) => {
     return total + ((parseFloat(channel.voltage) || 0) * (parseFloat(channel.current) || 0) * (channel.parallelCount || 1));
   }, 0);
 
