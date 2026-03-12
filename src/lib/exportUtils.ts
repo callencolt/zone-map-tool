@@ -307,7 +307,7 @@ export const exportBatchToPDF = async (controllers: ControllerData[], sectionNam
       ];
 
       // Draw row background
-      if (controller.channels.indexOf(channel) % 2 === 0) {
+    if (chIndex % 2 === 0) {
         pdf.setFillColor(250, 250, 250);
         pdf.rect(15, y - 5, pageWidth - 30, 7, 'F');
       }
