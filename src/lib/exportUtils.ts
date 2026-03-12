@@ -2,6 +2,12 @@ import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import { ControllerData } from './controllerStorage';
 
+const getUsedChannels = (controller: ControllerData) => {
+  return controller.channels.filter(ch => 
+    ch.fixtureType || ch.voltage || ch.current
+  );
+};
+
 export const exportToExcel = (controller: ControllerData) => {
   const worksheetData = [
     ['Controller Documentation Sheet'],
