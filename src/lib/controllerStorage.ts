@@ -45,6 +45,88 @@ export interface FixtureConfig {
 const CONTROLLERS_KEY = 'controller_docs';
 const TEMPLATES_KEY = 'controller_templates';
 const FIXTURES_KEY = 'fixture_configs';
+const FIXTURES_BACKUP_KEY = 'fixture_configs_backup';
+
+const readStorageArray = <T,>(key: string): T[] => {
+  try {
+    const data = localStorage.getItem(key);
+    if (!data) return [];
+
+    const parsed = JSON.parse(data);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    console.error(`Failed to read localStorage key: ${key}`, error);
+    return [];
+  }
+};
+
+const writeStorageArray = <T,>(key: string, data: T[]) => {
+  localStorage.setItem(key, JSON.stringify(data));
+};
+
+const persistFixtures = (fixtures: FixtureConfig[]) => {
+  writeStorageArray(FIXTURES_KEY, fixtures);
+  writeStorageArray(FIXTURES_BACKUP_KEY, fixtures);
+};
+
+const normalizeFixtureValue = (value: string) => value.trim();
+
+const createRecoveredFixtureId = (
+  name: string,
+  voltage: string,
+  current: string,
+) => {
+  return `recovered-${[name, voltage, current]
+    .map((part) => normalizeFixtureValue(part).toLowerCase().replace(/[^a-z0-9]+/g, '-'))
+    .filter(Boolean)
+    .join('-')}`;
+};
+
+const recoverFixtureConfigs = (): FixtureConfig[] => {
+  const recoveredFixtures = new Map<string, FixtureConfig>();
+  const recoveredAt = new Date().toISOString();
+
+  const addRecoveredFixture = (
+    name: string,
+    voltage: string,
+    current: string,
+  ) => {
+    const normalizedName = normalizeFixtureValue(name);
+    const normalizedVoltage = normalizeFixtureValue(voltage);
+    const normalizedCurrent = normalizeFixtureValue(current);
+
+    if (!normalizedName || !normalizedVoltage || !normalizedCurrent) {
+      return;
+    }
+
+    const recoveryKey = `${normalizedName.toLowerCase()}::${normalizedVoltage}::${normalizedCurrent}`;
+    if (recoveredFixtures.has(recoveryKey)) {
+      return;
+    }
+
+    recoveredFixtures.set(recoveryKey, {
+      id: createRecoveredFixtureId(normalizedName, normalizedVoltage, normalizedCurrent),
+      name: normalizedName,
+      voltage: normalizedVoltage,
+      current: normalizedCurrent,
+      createdAt: recoveredAt,
+    });
+  };
+
+  getControllers().forEach((controller) => {
+    controller.channels.forEach((channel) => {
+      addRecoveredFixture(channel.fixtureType, channel.voltage, channel.current);
+    });
+  });
+
+  getTemplates().forEach((template) => {
+    template.channels.forEach((channel) => {
+      addRecoveredFixture(channel.fixtureType, channel.voltage, channel.current);
+    });
+  });
+
+  return Array.from(recoveredFixtures.values());
+};
 
 export const saveController = (controller: ControllerData) => {
   const controllers = getControllers();
@@ -56,36 +138,35 @@ export const saveController = (controller: ControllerData) => {
     controllers.push(controller);
   }
   
-  localStorage.setItem(CONTROLLERS_KEY, JSON.stringify(controllers));
+  writeStorageArray(CONTROLLERS_KEY, controllers);
 };
 
 export const getControllers = (): ControllerData[] => {
-  const data = localStorage.getItem(CONTROLLERS_KEY);
-  return data ? JSON.parse(data) : [];
+  return readStorageArray<ControllerData>(CONTROLLERS_KEY);
 };
 
 export const deleteController = (id: string) => {
   const controllers = getControllers().filter(c => c.id !== id);
-  localStorage.setItem(CONTROLLERS_KEY, JSON.stringify(controllers));
+  writeStorageArray(CONTROLLERS_KEY, controllers);
 };
 
 export const deleteControllersByCampus = (campus: string) => {
   const controllers = getControllers().filter(c => c.campus !== campus);
-  localStorage.setItem(CONTROLLERS_KEY, JSON.stringify(controllers));
+  writeStorageArray(CONTROLLERS_KEY, controllers);
 };
 
 export const deleteControllersByBuilding = (campus: string, building: string) => {
   const controllers = getControllers().filter(
     c => !(c.campus === campus && c.building === building)
   );
-  localStorage.setItem(CONTROLLERS_KEY, JSON.stringify(controllers));
+  writeStorageArray(CONTROLLERS_KEY, controllers);
 };
 
 export const deleteControllersByFloor = (campus: string, building: string, floor: string) => {
   const controllers = getControllers().filter(
     c => !(c.campus === campus && c.building === building && c.floor === floor)
   );
-  localStorage.setItem(CONTROLLERS_KEY, JSON.stringify(controllers));
+  writeStorageArray(CONTROLLERS_KEY, controllers);
 };
 
 export const saveTemplate = (template: ControllerTemplate) => {
@@ -98,17 +179,16 @@ export const saveTemplate = (template: ControllerTemplate) => {
     templates.push(template);
   }
   
-  localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+  writeStorageArray(TEMPLATES_KEY, templates);
 };
 
 export const getTemplates = (): ControllerTemplate[] => {
-  const data = localStorage.getItem(TEMPLATES_KEY);
-  return data ? JSON.parse(data) : [];
+  return readStorageArray<ControllerTemplate>(TEMPLATES_KEY);
 };
 
 export const deleteTemplate = (id: string) => {
   const templates = getTemplates().filter(t => t.id !== id);
-  localStorage.setItem(TEMPLATES_KEY, JSON.stringify(templates));
+  writeStorageArray(TEMPLATES_KEY, templates);
 };
 
 export const saveFixtureConfig = (fixture: FixtureConfig) => {
@@ -121,15 +201,33 @@ export const saveFixtureConfig = (fixture: FixtureConfig) => {
     fixtures.push(fixture);
   }
   
-  localStorage.setItem(FIXTURES_KEY, JSON.stringify(fixtures));
+  persistFixtures(fixtures);
 };
 
 export const getFixtureConfigs = (): FixtureConfig[] => {
-  const data = localStorage.getItem(FIXTURES_KEY);
-  return data ? JSON.parse(data) : [];
+  const fixtures = readStorageArray<FixtureConfig>(FIXTURES_KEY);
+  if (fixtures.length > 0) {
+    if (readStorageArray<FixtureConfig>(FIXTURES_BACKUP_KEY).length === 0) {
+      writeStorageArray(FIXTURES_BACKUP_KEY, fixtures);
+    }
+    return fixtures;
+  }
+
+  const backupFixtures = readStorageArray<FixtureConfig>(FIXTURES_BACKUP_KEY);
+  if (backupFixtures.length > 0) {
+    writeStorageArray(FIXTURES_KEY, backupFixtures);
+    return backupFixtures;
+  }
+
+  const recoveredFixtures = recoverFixtureConfigs();
+  if (recoveredFixtures.length > 0) {
+    persistFixtures(recoveredFixtures);
+  }
+
+  return recoveredFixtures;
 };
 
 export const deleteFixtureConfig = (id: string) => {
   const fixtures = getFixtureConfigs().filter(f => f.id !== id);
-  localStorage.setItem(FIXTURES_KEY, JSON.stringify(fixtures));
+  persistFixtures(fixtures);
 };
