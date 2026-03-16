@@ -536,7 +536,7 @@ const Dashboard = ({ onCreateNew, onEditController, onOpenFixtures }: DashboardP
                                                   <div className="flex justify-between">
                                                     <span className="text-muted-foreground">Channels:</span>
                                                     <span className="font-medium text-foreground">
-                                                      {controller.channels.length}
+                                                      {controller.channels.filter(ch => ch.fixtureType || ch.voltage || ch.current).length}
                                                     </span>
                                                   </div>
                                                   <div className="flex justify-between pt-2 border-t border-border">
