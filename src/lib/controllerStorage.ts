@@ -47,6 +47,8 @@ const TEMPLATES_KEY = 'controller_templates';
 const FIXTURES_KEY = 'fixture_configs';
 const FIXTURES_BACKUP_KEY = 'fixture_configs_backup';
 
+const hasStorageKey = (key: string) => localStorage.getItem(key) !== null;
+
 const readStorageArray = <T,>(key: string): T[] => {
   try {
     const data = localStorage.getItem(key);
@@ -205,16 +207,16 @@ export const saveFixtureConfig = (fixture: FixtureConfig) => {
 };
 
 export const getFixtureConfigs = (): FixtureConfig[] => {
-  const fixtures = readStorageArray<FixtureConfig>(FIXTURES_KEY);
-  if (fixtures.length > 0) {
-    if (readStorageArray<FixtureConfig>(FIXTURES_BACKUP_KEY).length === 0) {
+  if (hasStorageKey(FIXTURES_KEY)) {
+    const fixtures = readStorageArray<FixtureConfig>(FIXTURES_KEY);
+    if (!hasStorageKey(FIXTURES_BACKUP_KEY)) {
       writeStorageArray(FIXTURES_BACKUP_KEY, fixtures);
     }
     return fixtures;
   }
 
-  const backupFixtures = readStorageArray<FixtureConfig>(FIXTURES_BACKUP_KEY);
-  if (backupFixtures.length > 0) {
+  if (hasStorageKey(FIXTURES_BACKUP_KEY)) {
+    const backupFixtures = readStorageArray<FixtureConfig>(FIXTURES_BACKUP_KEY);
     writeStorageArray(FIXTURES_KEY, backupFixtures);
     return backupFixtures;
   }
